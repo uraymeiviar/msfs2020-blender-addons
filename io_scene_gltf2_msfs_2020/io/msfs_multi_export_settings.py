@@ -33,7 +33,9 @@ def on_enable_msfs_extension(self, context):
     # Set the properties in the glTF exporter 
     # accordingly to the multi exporter settings
     props = context.scene.msfs_exporter_settings
-    props.enable_msfs_extension = self.enable_msfs_extension
+    # Only write on change: msfs_exporter_settings syncs back here (see MSFS2020_ExporterProperties)
+    if props.enable_msfs_extension != self.enable_msfs_extension:
+        props.enable_msfs_extension = self.enable_msfs_extension
     
     # Export NLA By default
     if bpy.app.version < (4, 2, 0):

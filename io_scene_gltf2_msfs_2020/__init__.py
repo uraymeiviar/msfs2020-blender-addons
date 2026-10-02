@@ -54,7 +54,11 @@ class MSFS2020_ExporterProperties(bpy.types.PropertyGroup):
     def msfs_enable_msfs_extension_update(self, context):
         props = bpy.context.scene.msfs_exporter_settings
         settings = bpy.context.scene.msfs_multi_exporter_settings
-        settings.enable_msfs_extension = props.enable_msfs_extension
+        # Blender fires update callbacks even when the value is unchanged, and the multi exporter
+        # setting syncs back to this one: only write on change, or the two recurse forever
+        # (RecursionError on Python <= 3.11, hard C stack overflow crash on Blender 5.x)
+        if settings.enable_msfs_extension != props.enable_msfs_extension:
+            settings.enable_msfs_extension = props.enable_msfs_extension
 
     enable_msfs_extension: bpy.props.BoolProperty(
         name="Microsoft Flight Simulator 2020 Extensions",

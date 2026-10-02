@@ -46,7 +46,7 @@ class MSFS2020_Anisotropic(MSFS2020_Material):
         # In[0] : Anisotropic Texture -> Out[0]
         separateAnisotropicNode = self.addNode(
             name = MSFS2020_AnisotropicNodes.separateAnisotropic.value,
-            typeNode = "ShaderNodeSeparateRGB",
+            typeNode = "ShaderNodeSeparateColor",  # ShaderNodeSeparateRGB was removed in Blender 5.0
             location = (-100.0, -800.0),
             width = 300.0,
             frame = anisotropicFrame)

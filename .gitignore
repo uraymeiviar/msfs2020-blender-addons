@@ -1,0 +1,10 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Bundled SDK documentation (large; available in the MSFS SDK install)
+documentation.html
+
+# Blender backups
+*.blend1
+*.blend2

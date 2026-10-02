@@ -20,9 +20,13 @@ from ..com.msfs_constants import (
 )
 
 if bpy.app.version >= (4, 5, 0):
-    from io_scene_gltf2.io.com import draco as gltf2_io_draco_compression_extension
+    # Public API since Khronos 4.5 (the draco module itself moved from io.com to io.exp in 5.x)
+    from io_scene_gltf2 import is_draco_available
 else:
     from io_scene_gltf2.io.com import gltf2_io_draco_compression_extension
+
+    def is_draco_available():
+        return gltf2_io_draco_compression_extension.dll_exists(quiet=True)
 
 
 def on_enable_msfs_extension(self, context):
@@ -1305,7 +1309,7 @@ class MSFS2020_PT_export_geometry_compression(bpy.types.Panel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         super(MSFS2020_PT_export_main).__init__(*args, **kwargs)
-        self.is_draco_available = gltf2_io_draco_compression_extension.dll_exists(quiet=True)
+        self.is_draco_available = is_draco_available()
 
     @classmethod
     def poll(cls, context):

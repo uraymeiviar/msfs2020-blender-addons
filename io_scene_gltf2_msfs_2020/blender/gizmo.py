@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import bgl as bgl
 import bmesh
 import bpy
 import gpu
@@ -201,9 +200,10 @@ class MSFS2020CollisionGizmo(bpy.types.Gizmo):
         
         matrix = self.get_matrix()
 
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
+        # bgl was removed in Blender 4.0; GL_LINE_SMOOTH has no gpu.state equivalent
+        # (the 3D_POLYLINE shader already draws anti-aliased lines)
+        gpu.state.blend_set("ALPHA")
+        gpu.state.depth_test_set("LESS_EQUAL")
 
         # Use Blender theme colors to keep everything consistent
         draw_color = list(context.preferences.themes[0].view_3d.empty)
@@ -228,10 +228,10 @@ class MSFS2020CollisionGizmo(bpy.types.Gizmo):
             vertex_pos
         )
 
-        # Restore OpenGL defaults
-        bgl.glLineWidth(1)
-        bgl.glDisable(bgl.GL_BLEND)
-        bgl.glDisable(bgl.GL_LINE_SMOOTH)
+        # Restore GPU state defaults
+        gpu.state.line_width_set(1.0)
+        gpu.state.blend_set("NONE")
+        gpu.state.depth_test_set("NONE")
 
     def apply_vert_transforms(self, vert, matrix):
         vert = list(vert.co)

@@ -223,6 +223,14 @@ def case_skinning(out_dir, log: CaseLog):
     mod = col.modifiers.new("Armature", "ARMATURE")
     mod.object = rig
 
+    # Half of these vertices carry no bone weight: Khronos binds them to an extra "neutral bone"
+    # (the FSS 2020 exporter disables that, see msfs_khronos_patches.py)
+    partial = _box("PartlyWeighted", location=(-1.5, 0, 0.5))
+    g_part = partial.vertex_groups.new(name="Root")
+    g_part.add([v.index for v in partial.data.vertices if v.co.z > 0], 1.0, "REPLACE")
+    partial.parent = rig
+    partial.modifiers.new("Armature", "ARMATURE").object = rig
+
     pb = rig.pose.bones["Tip"]
     pb.rotation_mode = "XYZ"
     _keyframe(pb, "rotation_euler", [(1, 0.0), (10, 0.8), (20, -0.4)], index=0)

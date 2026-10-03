@@ -236,7 +236,7 @@ def _close(a, b):
     return math.isclose(a, b, rel_tol=REL_TOL, abs_tol=ABS_TOL)
 
 
-def diff(a, b, path="", out=None, limit=400):
+def diff(a, b, path="", out=None, limit=100000):
     if out is None:
         out = []
     if len(out) >= limit:

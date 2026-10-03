@@ -122,7 +122,7 @@ def diff_outputs(r_ref, r_new):
 
 
 def is_problem(r):
-    return not r["exported"] or r["console_tracebacks"] or r["msfs_errors"]
+    return not r["exported"] or r["console_tracebacks"] or r["msfs_errors"] or r.get("leftover_temp_nodes")
 
 
 def main():
@@ -164,6 +164,9 @@ def main():
                     print("    enable: " + e.strip().splitlines()[-1])
                 for e in r["msfs_errors"]:
                     print("    " + e.replace("\n", "\n    ")[:600])
+                if r.get("leftover_temp_nodes"):
+                    print(f"    {len(r['leftover_temp_nodes'])} temp node(s) left in materials, e.g. "
+                          + ", ".join(r["leftover_temp_nodes"][:3]))
 
     failed = sum(1 for r in results.values() if is_problem(r))
     if a.target_only:

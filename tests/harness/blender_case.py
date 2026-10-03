@@ -135,6 +135,10 @@ def main():
                     if name.endswith((".gltf", ".xml")):
                         result["outputs"].append(os.path.relpath(os.path.join(dirpath, name), args.out).replace("\\", "/"))
             result["outputs"].sort()
+            # Exporters must leave the artist's scene untouched (e.g. no temp shader nodes)
+            result["leftover_temp_nodes"] = sorted(
+                f"{m.name}/{n.name}" for m in bpy.data.materials if m.node_tree
+                for n in m.node_tree.nodes if "Temp" in n.name)
             result["exported"] = any(o.endswith(".gltf") for o in result["outputs"])
             if not result["exported"]:
                 result["export_error"] = f"exporter returned {ret!r} and wrote no glTF"

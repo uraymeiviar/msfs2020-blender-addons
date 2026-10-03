@@ -44,9 +44,12 @@ class Export:
         gltf2_asset,
         export_settings
     ):
+        # Leftovers of an export that raised before gather_gltf_extensions_hook
+        MSFS2020_Material_IO.remove_temp_nodes()
+
         if not self.properties.enable_msfs_extension:
             return
-        
+
         if gltf2_asset.extensions is None:
             gltf2_asset.extensions = {}
             
@@ -64,6 +67,9 @@ class Export:
         gltf2_plan,
         export_settings
     ):
+        # Every material (and its textures) has been gathered at this point
+        MSFS2020_Material_IO.remove_temp_nodes()
+
         if not self.properties.enable_msfs_extension:
             return
         

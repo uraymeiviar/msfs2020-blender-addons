@@ -14,6 +14,7 @@
 
 import bpy
 import os
+import uuid
 
 if bpy.app.version >= (4, 5, 0):
     from io_scene_gltf2.blender.imp.image import BlenderImage
@@ -76,8 +77,38 @@ class MSFS2020_Material_IO:
         MSFS2020_MaterialExtensions.AsoboMaterialCode,
     ]
 
+    # Temporary nodes created by export_image(), as (node_tree, node_name), removed by
+    # remove_temp_nodes() once the whole glTF has been gathered.
+    #
+    # The Khronos exporter memoizes texture gathering (texture info, texture, image, sampler)
+    # keyed on the shader socket / node objects passed in. Removing a throwaway node right
+    # after gathering frees its memory, Blender reuses the address for the next throwaway
+    # node, and the memoized gather returns the PREVIOUS texture (Blender < 4.2, where sockets
+    # are passed as raw bpy structs). Keeping every temp node alive until the export is done
+    # makes all keys distinct, so each texture resolves from its own image and the caches
+    # stay valid (texture/image de-duplication keeps working).
+    _temp_nodes = []
+
     def __new__(cls, *args, **kwargs):
         raise RuntimeError(f"{cls} should not be instantiated")
+
+    @staticmethod
+    def remove_temp_nodes():
+        for node_tree, node_name in MSFS2020_Material_IO._temp_nodes:
+            try:
+                node = node_tree.nodes.get(node_name)
+                if node is not None:
+                    node_tree.nodes.remove(node)
+            except ReferenceError:  # material removed in the meantime
+                pass
+        MSFS2020_Material_IO._temp_nodes.clear()
+
+    @staticmethod
+    def _new_temp_node(node_tree, node_type, name):
+        node = node_tree.nodes.new(node_type)
+        node.name = f"MSFS Temp {name} {uuid.uuid4().hex}"
+        MSFS2020_Material_IO._temp_nodes.append((node_tree, node.name))
+        return node
 
     @staticmethod
     def create_image(index, import_settings):
@@ -92,12 +123,12 @@ class MSFS2020_Material_IO:
 
     @staticmethod
     def export_image(blender_material, blender_image, image_type, export_settings):
-        nodes = blender_material.node_tree.nodes
-        links = blender_material.node_tree.links
+        node_tree = blender_material.node_tree
+        links = node_tree.links
 
         # Create a fake texture node temporarily (unfortunately this is the only solid way of doing this)
-        texture_node = nodes.new("ShaderNodeTexImage")
-        texture_node.name = "Texture Output"
+        # Temp nodes are removed after the export, see _temp_nodes
+        texture_node = MSFS2020_Material_IO._new_temp_node(node_tree, "ShaderNodeTexImage", "Texture Output")
         texture_node.image = blender_image
 
         # Save image path before converting it to an absolute path
@@ -108,8 +139,8 @@ class MSFS2020_Material_IO:
         texture_node.image.filepath = os.path.realpath(texture_node.image.filepath)
 
         # Create shader to plug texture into
-        principled_bsdf_node = nodes.new("ShaderNodeBsdfPrincipled")
-        principled_bsdf_node.name = "Principled BSDF Temp Node"
+        principled_bsdf_node = MSFS2020_Material_IO._new_temp_node(
+            node_tree, "ShaderNodeBsdfPrincipled", "Principled BSDF")
 
         texture_info = None
 
@@ -139,8 +170,8 @@ class MSFS2020_Material_IO:
                 )
 
         elif image_type == "NORMAL":
-            normal_node = nodes.new("ShaderNodeNormalMap")
-            normal_node.name = "Normal Texture Output"
+            normal_node = MSFS2020_Material_IO._new_temp_node(
+                node_tree, "ShaderNodeNormalMap", "Normal Texture Output")
 
             links.new(
                 texture_node.outputs[0],
@@ -184,15 +215,7 @@ class MSFS2020_Material_IO:
 
         if hasattr(texture_info, "tex_coord"):
             texture_info.tex_coord = None
-            
-        # region Delete temp nodes
-        nodes.remove(principled_bsdf_node)
-        nodes.remove(texture_node)
-        
-        if image_type == "NORMAL":
-            nodes.remove(normal_node)
-        # endregion
-        
+
         return texture_info
 
     @staticmethod
